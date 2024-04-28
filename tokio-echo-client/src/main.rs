@@ -3,7 +3,7 @@ use tokio::{
     net::TcpStream,
 };
 
-const ECHO_SERVER: &str = "tcpbin.com:4242";
+const ECHO_SERVER: &str = "127.0.0.1:8000";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -13,22 +13,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = stream.local_addr().unwrap();
     println!("[Connected] {}:{}", addr.ip(), addr.port());
 
-    // writing message
-    let message = "Hello World!";
-    let terminal_char = "\n";
-    let num_bytes_sent = stream
-        .write(format!("{message}{terminal_char}").as_bytes())
-        .await?;
-    stream.flush().await?;
-    println!("[Sent] ({num_bytes_sent} bytes): {}", message);
+    loop {
+        let mut buf = String::new();
+        std::io::stdin().read_line(&mut buf)?;
+        let message = buf.trim();
 
-    // reading message
-    let mut read_buffer: [u8; 1024] = [0; 1024];
-    let num_bytes_read = stream.read(&mut read_buffer).await?;
-    println!(
-        "[Received] ({num_bytes_read} bytes): {}",
-        String::from_utf8_lossy(&read_buffer[..num_bytes_read])
-    );
+        // writing message
+        let terminal_char = "\n";
+        let num_bytes_sent = stream
+            .write(format!("{message}{terminal_char}").as_bytes())
+            .await?;
+        stream.flush().await?;
+        println!("[Sent] ({num_bytes_sent} bytes): {}", message);
 
-    Ok(())
+        // reading message
+        let mut read_buffer: [u8; 1024] = [0; 1024];
+        let num_bytes_read = stream.read(&mut read_buffer).await?;
+        println!(
+            "[Received] ({num_bytes_read} bytes): {}",
+            String::from_utf8_lossy(&read_buffer[..num_bytes_read])
+        );
+    }
 }
