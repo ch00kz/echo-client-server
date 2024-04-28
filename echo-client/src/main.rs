@@ -1,15 +1,24 @@
 use std::{
-    io::prelude::{Read, Write},
+    io::{
+        self,
+        prelude::{Read, Write},
+    },
     net::TcpStream,
 };
 
-const ECHO_SERVER: &str = "tcpbin.com:4242";
+// const ECHO_SERVER: &str = "tcpbin.com:4242";
 
-fn main() {
-    println!("[Connecting] {ECHO_SERVER}");
-    let mut stream = TcpStream::connect(ECHO_SERVER).unwrap();
-    let addr = stream.local_addr().unwrap();
-    println!("[Connected] {}:{}", addr.ip(), addr.port());
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("Enter addr of echo-server");
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+
+    let addr = input.trim();
+    println!("[Connecting] {addr}");
+    let mut stream = TcpStream::connect(addr).unwrap();
+    let local_addr = stream.local_addr().unwrap();
+    println!("[Connected] {}:{}", local_addr.ip(), local_addr.port());
 
     // writing message
     let message = "Hello World!";
@@ -27,4 +36,6 @@ fn main() {
         "[Received] ({num_bytes_read} bytes): {}",
         String::from_utf8_lossy(&read_buffer[..num_bytes_read])
     );
+
+    Ok(())
 }
