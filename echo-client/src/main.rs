@@ -1,46 +1,45 @@
-use std::{
-    env,
-    io::prelude::{Read, Write},
-    net::TcpStream,
-};
+use std::{env, net::TcpStream};
+
+use common::message::{Message, MessageKind};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let Args { addr } = parse_args()?;
+    let Args { name, addr } = parse_args()?;
     println!("[Connecting] {addr}");
     let mut stream = TcpStream::connect(addr.clone()).unwrap();
     let local_addr = stream.local_addr().unwrap();
     println!("[Connected] {}:{}", local_addr.ip(), local_addr.port());
 
+    // tell the server who you are
+    Message::write_message(&mut stream, Message::new(MessageKind::Iam, Some(name)));
+
     loop {
         // accept message from user
         let mut buf = String::new();
         std::io::stdin().read_line(&mut buf)?;
-        let message = buf.trim();
 
         // writing message
-        let num_bytes_sent = stream.write(format!("{message}").as_bytes()).unwrap();
-        stream.flush().unwrap();
-        println!("[Sent] ({num_bytes_sent} bytes): {}", message);
-        
+        let message = Message::new(MessageKind::Standard, Some(buf.trim().to_string()));
+        Message::write_message(&mut stream, message);
+
         // reading response to message
-        let mut read_buffer: [u8; 1024] = [0; 1024];
-        let num_bytes_read = stream.read(&mut read_buffer).unwrap();
-        println!(
-            "[Received] ({num_bytes_read} bytes): {}",
-            String::from_utf8_lossy(&read_buffer[..num_bytes_read])
-        );
+        let received_message = Message::read_message(&mut stream).unwrap();
+        println!("{:?}", received_message);
     }
 }
 
 struct Args {
+    name: String,
     addr: String,
 }
 
 fn parse_args() -> Result<Args, &'static str> {
     let args: Vec<String> = env::args().collect();
-    if let Some(addr) = args.get(1) {
-        Ok(Args { addr: addr.clone() })
+    if let (Some(name), Some(addr)) = (args.get(1), args.get(2)) {
+        Ok(Args {
+            name: name.clone(),
+            addr: addr.clone(),
+        })
     } else {
-        Err("Socket address is missing from command line arguments")
+        Err("Please supply name and addr")
     }
 }
