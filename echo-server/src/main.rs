@@ -26,14 +26,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         thread::spawn(move || {
             println!("New thread");
             let mut stream = conn.unwrap();
-                        
+
             let peer_addr = stream.peer_addr().unwrap();
             println!("New connection from {peer_addr}");
 
             loop {
                 // read incoming message
                 let received_message = Message::read_message(&mut stream).unwrap();
-                
+
                 match received_message.kind {
                     MessageKind::Iam => {
                         println!("{:#?}", received_message);
@@ -60,15 +60,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         // send confirmation
                         Message::write_message(
                             &mut stream,
-                            &Message::new(MessageKind::Confirmation(received_message.id), None)
+                            &Message::new(MessageKind::Confirmation(received_message.id), None),
                         );
 
                         // attempt to send message to all clients
                         let message_to_clients = Message::new(
-                            MessageKind::Standard, 
-                            Some(format!("{sender}: {}", received_message.content.unwrap()))
+                            MessageKind::Standard,
+                            Some(format!("{sender}: {}", received_message.content.unwrap())),
                         );
-                        
+
                         let mut active_connections = connections.lock().unwrap();
                         println!("{:#?}", active_connections);
                         for conn in active_connections.iter_mut() {
@@ -78,7 +78,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                     MessageKind::Kill => stream.shutdown(std::net::Shutdown::Both).unwrap(),
-                    MessageKind::Confirmation(_) => panic!("Who is sending confirmation messages to the server?"),
+                    MessageKind::Confirmation(_) => {
+                        panic!("Who is sending confirmation messages to the server?")
+                    }
                 }
             }
         });

@@ -12,20 +12,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // tell the server who you are
     Message::write_message(&mut stream, &Message::new(MessageKind::Iam, Some(name)));
     let mut read_stream = stream.try_clone().unwrap();
-    
+
     //reader there?
     thread::spawn(move || {
         loop {
-              // reading response to message
+            // reading response to message
             let received_message = Message::read_message(&mut read_stream).unwrap();
             match received_message.kind {
                 MessageKind::Standard => print_message(&received_message),
                 _ => {}
             }
-            
         }
     });
-    
+
     loop {
         // accept message content from user
         let mut buf = String::new();
@@ -57,5 +56,9 @@ fn parse_args() -> Result<Args, &'static str> {
 }
 
 fn print_message(message: &Message) {
-    println!("[{}] {}", message.created_at, message.content.clone().unwrap())
+    println!(
+        "[{}] {}",
+        message.created_at,
+        message.content.clone().unwrap()
+    )
 }
