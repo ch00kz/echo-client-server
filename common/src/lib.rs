@@ -38,22 +38,9 @@ pub mod message {
             self.kind == MessageKind::Iam
         }
 
-        pub fn get_iam_value(&self) -> Option<String> {
-            match self.content.clone() {
-                Some(content) => {
-                    let parts: Vec<&str> = content.split("iam:").collect();
-                    match parts.get(1) {
-                        Some(name) => Some(name.to_string()),
-                        None => None,
-                    }
-                }
-                None => None,
-            }
-        }
-
-        pub fn write_message(stream: &mut TcpStream, message: Message) -> () {
+        pub fn write_message(stream: &mut TcpStream, message: &Message) -> () {
             let encoded: Vec<u8> = bincode::serialize(&message).unwrap();
-            stream.write(&encoded).unwrap();
+            stream.write_all(&encoded).unwrap();
             stream.flush().unwrap();
         }
 
