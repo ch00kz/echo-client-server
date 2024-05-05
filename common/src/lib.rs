@@ -39,7 +39,7 @@ pub mod message {
         }
 
         pub fn write_message(stream: &mut TcpStream, message: &Message) -> () {
-            let encoded: Vec<u8> = bincode::serialize(&message).unwrap();
+            let encoded: Vec<u8> = bincode::serialize(message).unwrap();
             stream.write_all(&encoded).unwrap();
             stream.flush().unwrap();
         }

@@ -9,38 +9,45 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let local_addr = stream.local_addr().unwrap();
     println!("[Connected] {}:{}", local_addr.ip(), local_addr.port());
 
-    // tell the server who you are
+    // Tell the server who you are
     Message::write_message(&mut stream, &Message::new(MessageKind::Iam, Some(name)));
-    let mut read_stream = stream.try_clone().unwrap();
 
-    //reader there?
-    thread::spawn(move || {
-        loop {
-            // reading response to message
-            let received_message = Message::read_message(&mut read_stream).unwrap();
-            match received_message.kind {
-                MessageKind::Standard => print_message(&received_message),
-                _ => {}
-            }
-        }
-    });
+    let read_stream = stream.try_clone().unwrap();
+    thread::spawn(move || receive_messages_from_server(read_stream));
 
     loop {
-        // accept message content from user
-        let mut buf = String::new();
-        std::io::stdin().read_line(&mut buf)?;
-
-        // writing message
-        Message::write_message(
-            &mut stream,
-            &Message::new(MessageKind::Standard, Some(buf.trim().to_string())),
-        );
+        send_messages_to_server(&mut stream)?
     }
 }
 
 struct Args {
     name: String,
     addr: String,
+}
+
+fn receive_messages_from_server(mut stream: TcpStream) {
+    loop {
+        // reading response to message
+        let received_message = Message::read_message(&mut stream).unwrap();
+        match received_message.kind {
+            MessageKind::Standard => print_message(&received_message),
+            _ => {}
+        }
+    }
+}
+
+fn send_messages_to_server(stream: &mut TcpStream) -> Result<(), Box<dyn std::error::Error>> {
+    // accept message content from user
+    let mut buf = String::new();
+    std::io::stdin().read_line(&mut buf)?;
+
+    // writing message
+    Message::write_message(
+        stream,
+        &Message::new(MessageKind::Standard, Some(buf.trim().to_string())),
+    );
+
+    Ok(())
 }
 
 fn parse_args() -> Result<Args, &'static str> {
